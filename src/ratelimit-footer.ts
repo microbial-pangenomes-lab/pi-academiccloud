@@ -39,17 +39,28 @@ export default function (pi: ExtensionAPI) {
 
   let footerDispose: (() => void) | undefined;
   let isActive = false;
+  let currentTui: any = null;
 
   function isAcademicCloudModel(model: any): boolean {
     return model?.baseUrl?.includes("chat-ai.academiccloud.de") ?? false;
   }
 
+  function requestFooterRender() {
+    if (currentTui) {
+      currentTui.requestRender();
+    }
+  }
+
   function setupRateLimitFooter(ctx: ExtensionContext) {
-    const result = ctx.ui.setFooter((tui, theme, footerData) => {
+    ctx.ui.setFooter((tui, theme, footerData) => {
+      currentTui = tui;
       const unsub = footerData.onBranchChange(() => tui.requestRender());
 
       return {
-        dispose: unsub,
+        dispose: () => {
+          unsub();
+          currentTui = undefined;
+        },
         invalidate() {},
         render(width: number): string[] {
           // Compute tokens from ctx
@@ -71,7 +82,7 @@ export default function (pi: ExtensionAPI) {
           // Build rate limit display (only show when Academic Cloud model is active)
           const rateLimitParts: string[] = [];
           
-          if (isActive && state.lastUpdate > 0) {
+          if (isActive && state.lastUpdate > 0 && state.remainingMinute !== null) {
             if (state.remainingMinute !== null && state.limitMinute) {
               const usedMinute = state.limitMinute - state.remainingMinute;
               const pctMinute = Math.round((usedMinute / state.limitMinute) * 100);
@@ -92,13 +103,15 @@ export default function (pi: ExtensionAPI) {
             }
           }
 
-          const tokenStr = theme.fg("dim", `↑${fmt(input)} ↓${fmt(output)} $${cost.toFixed(3)}`);
+          // Don't show cost for Academic Cloud (it's free)
+          const tokenStr = theme.fg("dim", `↑${fmt(input)} ↓${fmt(output)}`);
           const rateLimitStr = rateLimitParts.length > 0 ? rateLimitParts.join(" ") : "";
-          const branchStr = branch ? theme.fg("dim", `(${branch})`) : "";
+          const branchStr = branch ? ` (${branch})` : "";
+          const providerStr = isActive ? theme.fg("accent" as any, "(academiccloud)") : "";
           const modelStr = theme.fg("dim", ctx.model?.id || "no-model");
 
           const left = `${tokenStr}${rateLimitStr ? " | " + rateLimitStr : ""}`;
-          const right = `${modelStr}${branchStr ? " " + branchStr : ""}`;
+          const right = `${modelStr}${providerStr ? " " + providerStr : ""}${branchStr}`;
 
           const pad = " ".repeat(Math.max(1, width - visibleWidth(left) - visibleWidth(right)));
           return [truncateToWidth(left + pad + right, width)];
