@@ -77,6 +77,15 @@ export default function (pi: ExtensionAPI) {
           const branch = footerData.getGitBranch();
           const fmt = (n: number) => (n < 1000 ? `${n}` : `${(n / 1000).toFixed(1)}k`);
 
+          // Compute context window usage percentage
+          const contextWindow = ctx.model?.contextWindow;
+          const totalTokens = input + output;
+          let contextPct: string | null = null;
+          if (contextWindow && contextWindow > 0) {
+            const pct = Math.round((totalTokens / contextWindow) * 100);
+            contextPct = `${pct}%`;
+          }
+
           // Build rate limit display (only show when Academic Cloud model is active)
           const rateLimitParts: string[] = [];
           
@@ -102,7 +111,8 @@ export default function (pi: ExtensionAPI) {
           }
 
           // Don't show cost for Academic Cloud (it's free)
-          const tokenStr = theme.fg("dim", `↑${fmt(input)} ↓${fmt(output)}`);
+          const contextStr = contextPct ? theme.fg("dim", `[${contextPct}]`) : "";
+          const tokenStr = theme.fg("dim", `↑${fmt(input)} ↓${fmt(output)}${contextStr ? " " + contextStr : ""}`);
           const rateLimitStr = rateLimitParts.length > 0 ? rateLimitParts.join(" ") : "";
           const branchStr = branch ? ` (${branch})` : "";
           const providerStr = isActive ? theme.fg("accent" as any, "(academiccloud)") : "";
