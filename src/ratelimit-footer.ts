@@ -65,14 +65,12 @@ export default function (pi: ExtensionAPI) {
         render(width: number): string[] {
           // Compute tokens from ctx
           let input = 0,
-            output = 0,
-            cost = 0;
+            output = 0;
           for (const e of ctx.sessionManager.getBranch()) {
             if (e.type === "message" && e.message.role === "assistant") {
               const m = e.message as AssistantMessage;
               input += m.usage.input;
               output += m.usage.output;
-              cost += m.usage.cost.total;
             }
           }
 
@@ -121,12 +119,12 @@ export default function (pi: ExtensionAPI) {
   }
 
   // Track rate limits from Academic Cloud API responses
-  pi.on("after_provider_response", async (event, ctx) => {
+  pi.on("after_provider_response", async (event: any, ctx) => {
     if (!ctx.model?.baseUrl?.includes("chat-ai.academiccloud.de")) {
       return;
     }
 
-    const headers = (event as any).responseHeaders;
+    const headers = event.headers;
     if (!headers) return;
 
     const remainingMinute = headers["x-ratelimit-remaining-minute"];
@@ -149,15 +147,12 @@ export default function (pi: ExtensionAPI) {
 
     state.lastUpdate = Date.now();
 
-    // Update footer
-    if (footerDispose) {
-      footerDispose();
-      setupRateLimitFooter(ctx);
-    }
+    // Request footer re-render
+    requestFooterRender();
   });
 
   // Reset state on session start
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("session_start", async (_event: any, ctx) => {
     state.remainingMinute = null;
     state.remainingHour = null;
     state.remainingDay = null;
@@ -166,7 +161,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   // Auto-enable footer when using Academic Cloud models
-  pi.on("input", async (event, ctx) => {
+  pi.on("input", async (event: any, ctx) => {
     const wasActive = isActive;
     isActive = isAcademicCloudModel(ctx.model);
     
