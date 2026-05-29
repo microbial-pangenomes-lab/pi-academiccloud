@@ -1,0 +1,29 @@
+{
+  "name": "pi-academiccloud",
+  "version": "1.0.0",
+  "description": "Pi extension for Academic Cloud AI models",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "pi",
+    "extension",
+    "academiccloud",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.0.1",
+    "@earendil-works/pi-ai": "^0.0.1",
+    "typescript": "^5.0.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/academiccloud.js",
+      "./dist/ratelimit-footer.js"
+    ]
+  }
+}
