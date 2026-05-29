@@ -170,6 +170,16 @@ export default function (pi: ExtensionAPI) {
     state.lastUpdate = 0;
   });
 
+  // Reset rate limits on compaction (new session state)
+  pi.on("session_compact", async (_event: any, _ctx) => {
+    state.remainingMinute = null;
+    state.remainingHour = null;
+    state.remainingDay = null;
+    state.remainingMonth = null;
+    state.lastUpdate = 0;
+    requestFooterRender();
+  });
+
   // Auto-enable footer when using Academic Cloud models
   pi.on("input", async (event: any, ctx) => {
     const wasActive = isActive;
