@@ -403,7 +403,7 @@ export default function (pi: ExtensionAPI) {
     supportsReasoningEffort: false,
     maxTokensField: "max_tokens" as const,
     supportsStrictMode: true,
-    thinkingFormat: "qwen",
+    thinkingFormat: "qwen" as const,
   };
 
   // Register provider with models from Chat AI Academic Cloud

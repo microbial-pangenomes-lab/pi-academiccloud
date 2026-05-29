@@ -5,8 +5,7 @@
  * Rate limits are extracted from API response headers and displayed
  * alongside token usage.
  * 
- * This extension is automatically loaded when placed in .pi/extensions/
- * or ~/.pi/agent/extensions/
+ * This extension is automatically loaded when the package is installed.
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -41,12 +40,12 @@ export default function (pi: ExtensionAPI) {
   let footerDispose: (() => void) | undefined;
   let isActive = false;
 
-  function isAcademicCloudModel(ctx: ExtensionContext): boolean {
-    return ctx.model?.baseUrl?.includes("chat-ai.academiccloud.de") ?? false;
+  function isAcademicCloudModel(model: any): boolean {
+    return model?.baseUrl?.includes("chat-ai.academiccloud.de") ?? false;
   }
 
   function setupRateLimitFooter(ctx: ExtensionContext) {
-    footerDispose = ctx.ui.setFooter((tui, theme, footerData) => {
+    const result = ctx.ui.setFooter((tui, theme, footerData) => {
       const unsub = footerData.onBranchChange(() => tui.requestRender());
 
       return {
@@ -77,19 +76,19 @@ export default function (pi: ExtensionAPI) {
               const usedMinute = state.limitMinute - state.remainingMinute;
               const pctMinute = Math.round((usedMinute / state.limitMinute) * 100);
               const color = pctMinute > 80 ? "red" : pctMinute > 50 ? "yellow" : "dim";
-              rateLimitParts.push(theme.fg(color, `min:${usedMinute}/${state.limitMinute}`));
+              rateLimitParts.push(theme.fg(color as any, `min:${usedMinute}/${state.limitMinute}`));
             }
             if (state.remainingHour !== null && state.limitHour) {
               const usedHour = state.limitHour - state.remainingHour;
               const pctHour = Math.round((usedHour / state.limitHour) * 100);
               const color = pctHour > 80 ? "red" : pctHour > 50 ? "yellow" : "dim";
-              rateLimitParts.push(theme.fg(color, `hr:${usedHour}/${state.limitHour}`));
+              rateLimitParts.push(theme.fg(color as any, `hr:${usedHour}/${state.limitHour}`));
             }
             if (state.remainingDay !== null && state.limitDay) {
               const usedDay = state.limitDay - state.remainingDay;
               const pctDay = Math.round((usedDay / state.limitDay) * 100);
               const color = pctDay > 80 ? "red" : pctDay > 50 ? "yellow" : "dim";
-              rateLimitParts.push(theme.fg(color, `day:${usedDay}/${state.limitDay}`));
+              rateLimitParts.push(theme.fg(color as any, `day:${usedDay}/${state.limitDay}`));
             }
           }
 
@@ -114,7 +113,7 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
-    const headers = event.responseHeaders;
+    const headers = (event as any).responseHeaders;
     if (!headers) return;
 
     const remainingMinute = headers["x-ratelimit-remaining-minute"];
@@ -154,9 +153,9 @@ export default function (pi: ExtensionAPI) {
   });
 
   // Auto-enable footer when using Academic Cloud models
-  pi.on("model_change", async (_event, ctx) => {
+  pi.on("input", async (event, ctx) => {
     const wasActive = isActive;
-    isActive = isAcademicCloudModel(ctx);
+    isActive = isAcademicCloudModel(ctx.model);
     
     if (isActive) {
       if (footerDispose) {
