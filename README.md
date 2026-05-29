@@ -7,7 +7,7 @@ A [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent) ext
 ### From GitHub (recommended)
 
 ```bash
-pi extensions install github:microbial-pangenomes-lab/pi-academiccloud
+pi install https://github.com/microbial-pangenomes-lab/pi-academiccloud
 ```
 
 ### Manual installation
