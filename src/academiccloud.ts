@@ -409,6 +409,20 @@ export default function (pi: ExtensionAPI) {
     thinkingFormat: "qwen" as const,
   };
 
+  // Register the custom API handler for Qwen 3.5 models with broken
+  // server-side tool call parsing. The vLLM backend emits tool calls as
+  // <tool_call> text in the content field instead of proper OpenAI
+  // tool_calls, and strips them entirely in streaming mode. The custom
+  // streamSimple handler works around this by using non-streaming requests
+  // and parsing tool calls from the text content.
+  //
+  // streamSimple is registered globally keyed by `api` name, so individual
+  // models opt in via their per-model `api` override below.
+  pi.registerProvider("academiccloud-qwen35-api", {
+    api: "academiccloud-qwen35-tool-fix",
+    streamSimple: streamQwen35ToolFix,
+  });
+
   // Register provider with models from Chat AI Academic Cloud
   pi.registerProvider("academiccloud", {
     baseUrl: "https://chat-ai.academiccloud.de/v1",
@@ -623,23 +637,12 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: qwenCompat,
       },
-    ]
-  });
-
-  // Separate provider for Qwen 3.5 models with broken server-side tool call
-  // parsing. The vLLM backend emits tool calls as <tool_call> text in the
-  // content field instead of proper OpenAI tool_calls, and strips them entirely
-  // in streaming mode. The custom streamSimple handler works around this by
-  // using non-streaming requests and parsing tool calls from the text content.
-  pi.registerProvider("academiccloud-qwen35", {
-    baseUrl: "https://chat-ai.academiccloud.de/v1",
-    apiKey: "$ACADEMICCLOUD_API_KEY",
-    api: "academiccloud-qwen35-tool-fix",
-    streamSimple: streamQwen35ToolFix,
-    models: [
+      // Qwen 3.5 122B/397B route through the custom tool-fix API handler
+      // registered above (per-model `api` override).
       {
         id: "qwen3.5-122b-a10b",
         name: "Qwen 3.5 122B A10B (Vision)",
+        api: "academiccloud-qwen35-tool-fix",
         reasoning: true,
         input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -650,6 +653,7 @@ export default function (pi: ExtensionAPI) {
       {
         id: "qwen3.5-397b-a17b",
         name: "Qwen 3.5 397B A17B (Vision)",
+        api: "academiccloud-qwen35-tool-fix",
         reasoning: true,
         input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
