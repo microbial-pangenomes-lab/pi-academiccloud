@@ -130,7 +130,7 @@ export default function (pi: ExtensionAPI) {
 
   // Track rate limits from Academic Cloud API responses
   pi.on("after_provider_response", async (event: any, ctx) => {
-    if (!ctx.model?.baseUrl?.includes("chat-ai.academiccloud.de")) {
+    if (!isAcademicCloudModel(ctx.model)) {
       return;
     }
 

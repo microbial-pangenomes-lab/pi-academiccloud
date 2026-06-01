@@ -214,6 +214,9 @@ function streamQwen35ToolFix(
         );
       }
 
+      // Call onResponse callback to allow extensions to capture headers
+      await options?.onResponse?.({ status: response.status, headers: Object.fromEntries(response.headers.entries()) }, model);
+
       const data = await response.json();
       const choice = data.choices?.[0];
       const message = choice?.message;
