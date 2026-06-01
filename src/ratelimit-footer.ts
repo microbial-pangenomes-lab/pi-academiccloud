@@ -93,19 +93,19 @@ export default function (pi: ExtensionAPI) {
             if (state.remainingMinute !== null && state.limitMinute) {
               const usedMinute = state.limitMinute - state.remainingMinute;
               const pctMinute = Math.round((usedMinute / state.limitMinute) * 100);
-              const color = pctMinute > 80 ? "red" : pctMinute > 50 ? "yellow" : "dim";
+              const color = pctMinute > 80 ? "error" : pctMinute > 50 ? "warning" : "dim";
               rateLimitParts.push(theme.fg(color as any, `min:${usedMinute}/${state.limitMinute}`));
             }
             if (state.remainingHour !== null && state.limitHour) {
               const usedHour = state.limitHour - state.remainingHour;
               const pctHour = Math.round((usedHour / state.limitHour) * 100);
-              const color = pctHour > 80 ? "red" : pctHour > 50 ? "yellow" : "dim";
+              const color = pctHour > 80 ? "error" : pctHour > 50 ? "warning" : "dim";
               rateLimitParts.push(theme.fg(color as any, `hr:${usedHour}/${state.limitHour}`));
             }
             if (state.remainingDay !== null && state.limitDay) {
               const usedDay = state.limitDay - state.remainingDay;
               const pctDay = Math.round((usedDay / state.limitDay) * 100);
-              const color = pctDay > 80 ? "red" : pctDay > 50 ? "yellow" : "dim";
+              const color = pctDay > 80 ? "error" : pctDay > 50 ? "warning" : "dim";
               rateLimitParts.push(theme.fg(color as any, `day:${usedDay}/${state.limitDay}`));
             }
           }
