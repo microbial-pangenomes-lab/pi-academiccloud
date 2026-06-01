@@ -42,7 +42,7 @@ export default function (pi: ExtensionAPI) {
   let currentTui: any = null;
 
   function isAcademicCloudModel(model: any): boolean {
-    return model?.provider === "academiccloud" || model?.provider === "academiccloud-qwen35" || model?.baseUrl?.includes("chat-ai.academiccloud.de") ?? false;
+    return model?.provider === "academiccloud" || model?.provider === "academiccloud-qwen35" || (model?.baseUrl?.includes("chat-ai.academiccloud.de") ?? false);
   }
 
   function requestFooterRender() {
