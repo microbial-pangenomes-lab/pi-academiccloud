@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "check-upstream": "npx tsx scripts/check-upstream-models.ts"
   },
   "keywords": [
     "pi",

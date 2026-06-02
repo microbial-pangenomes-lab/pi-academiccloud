@@ -74,6 +74,16 @@ Special provider for Qwen 3.5 models (122B and 397B) with custom tool call parsi
 - Qwen 3.5 27B/35B/3.6 35B (Vision)
 - Qwen 3.5 122B A10B / 397B A17B (via academiccloud-qwen35 provider)
 
+### Checking for Model Updates
+
+To check if new models are available upstream and generate a report:
+
+```bash
+npm run check-upstream
+```
+
+This creates `upstream-models-report.md` with a comparison of upstream vs extension models. The script automatically uses the API key from `~/.pi/agent/auth.json` or the `ACADEMICCLOUD_API_KEY` environment variable.
+
 ## License
 
 MIT
