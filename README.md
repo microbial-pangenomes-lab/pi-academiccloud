@@ -39,17 +39,9 @@ export ACADEMICCLOUD_API_KEY="your-api-key"
 
 Or add it to your shell configuration file (`.bashrc`, `.zshrc`, etc.).
 
-## Models
+## Provider
 
-This extension provides two providers:
-
-### `academiccloud`
-
-Standard provider with OpenAI-compatible API for most models.
-
-### `academiccloud-qwen35`
-
-Special provider for Qwen 3.5 models (122B and 397B) with custom tool call parsing to work around server-side limitations.
+This extension registers a single provider: `academiccloud`. All models (including the Qwen 3.5 122B and 397B variants) are available through this provider. The Qwen 3.5 122B/397B models use a custom API handler internally to work around server-side tool call parsing limitations, but this is transparent to the user.
 
 ## Available Models
 
@@ -72,7 +64,7 @@ Special provider for Qwen 3.5 models (122B and 397B) with custom tool call parsi
 - Mistral Large 3 675B Instruct 2512 (Vision)
 - Qwen 3 Omni 30B A3B Instruct (Multimodal)
 - Qwen 3.5 27B/35B/3.6 35B (Vision)
-- Qwen 3.5 122B A10B / 397B A17B (via academiccloud-qwen35 provider)
+- Qwen 3.5 122B A10B / 397B A17B (custom tool-call handler)
 
 ### Checking for Model Updates
 
