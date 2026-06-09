@@ -63,26 +63,19 @@ export default function (pi: ExtensionAPI) {
         },
         invalidate() {},
         render(width: number): string[] {
-          // Compute tokens from ctx
-          let input = 0,
-            output = 0;
-          for (const e of ctx.sessionManager.getBranch()) {
-            if (e.type === "message" && e.message.role === "assistant") {
-              const m = e.message as AssistantMessage;
-              input += m.usage.input;
-              output += m.usage.output;
-            }
-          }
+          // Compute tokens from ctx - use getContextUsage which properly handles compaction
+          const contextUsage = ctx.getContextUsage();
+          const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
+          const totalTokens = contextUsage?.tokens ?? 0;
+          const contextPercent = contextUsage?.percent;
 
           const branch = footerData.getGitBranch();
           const fmt = (n: number) => (n < 1000 ? `${n}` : `${(n / 1000).toFixed(1)}k`);
 
           // Compute context window usage percentage
-          const contextWindow = ctx.model?.contextWindow;
-          const totalTokens = input + output;
           let contextPct: string | null = null;
-          if (contextWindow && contextWindow > 0) {
-            const pct = Math.round((totalTokens / contextWindow) * 100);
+          if (contextPercent !== null && contextPercent !== undefined) {
+            const pct = Math.min(100, Math.round(contextPercent));
             contextPct = `${pct}%`;
           }
 
@@ -112,7 +105,7 @@ export default function (pi: ExtensionAPI) {
 
           // Don't show cost for Academic Cloud (it's free)
           const contextStr = contextPct ? theme.fg("dim", `[${contextPct}]`) : "";
-          const tokenStr = theme.fg("dim", `↑${fmt(input)} ↓${fmt(output)}${contextStr ? " " + contextStr : ""}`);
+          const tokenStr = theme.fg("dim", `↑${fmt(totalTokens)} ↓${fmt(totalTokens)}${contextStr ? " " + contextStr : ""}`);
           const rateLimitStr = rateLimitParts.length > 0 ? rateLimitParts.join(" ") : "";
           const branchStr = branch ? ` (${branch})` : "";
           const providerStr = isActive ? theme.fg("accent" as any, "(academiccloud)") : "";
