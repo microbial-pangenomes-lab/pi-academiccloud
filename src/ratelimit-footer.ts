@@ -22,6 +22,8 @@ interface RateLimitState {
   limitDay: number;
   limitMonth: number;
   lastUpdate: number;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -35,6 +37,8 @@ export default function (pi: ExtensionAPI) {
     limitDay: 1000,
     limitMonth: 3000,
     lastUpdate: 0,
+    inputTokens: 0,
+    outputTokens: 0,
   };
 
   let footerDispose: (() => void) | undefined;
@@ -63,11 +67,12 @@ export default function (pi: ExtensionAPI) {
         },
         invalidate() {},
         render(width: number): string[] {
-          // Compute tokens from ctx - use getContextUsage which properly handles compaction
+          // Compute tokens from state (tracked from API responses)
           const contextUsage = ctx.getContextUsage();
           const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
-          const totalTokens = contextUsage?.tokens ?? 0;
           const contextPercent = contextUsage?.percent;
+          const inputTokens = state.inputTokens;
+          const outputTokens = state.outputTokens;
 
           const branch = footerData.getGitBranch();
           const fmt = (n: number) => (n < 1000 ? `${n}` : `${(n / 1000).toFixed(1)}k`);
@@ -105,7 +110,7 @@ export default function (pi: ExtensionAPI) {
 
           // Don't show cost for Academic Cloud (it's free)
           const contextStr = contextPct ? theme.fg("dim", `[${contextPct}]`) : "";
-          const tokenStr = theme.fg("dim", `↑${fmt(totalTokens)} ↓${fmt(totalTokens)}${contextStr ? " " + contextStr : ""}`);
+          const tokenStr = theme.fg("dim", `↑${fmt(inputTokens)} ↓${fmt(outputTokens)}${contextStr ? " " + contextStr : ""}`);
           const rateLimitStr = rateLimitParts.length > 0 ? rateLimitParts.join(" ") : "";
           const branchStr = branch ? ` (${branch})` : "";
           const providerStr = isActive ? theme.fg("accent" as any, "(academiccloud)") : "";
@@ -121,7 +126,7 @@ export default function (pi: ExtensionAPI) {
     });
   }
 
-  // Track rate limits from Academic Cloud API responses
+  // Track rate limits and token usage from Academic Cloud API responses
   pi.on("after_provider_response", async (event: any, ctx) => {
     if (!isAcademicCloudModel(ctx.model)) {
       return;
@@ -148,6 +153,13 @@ export default function (pi: ExtensionAPI) {
     if (limitDay !== undefined) state.limitDay = parseInt(limitDay, 10);
     if (limitMonth !== undefined) state.limitMonth = parseInt(limitMonth, 10);
 
+    // Track token usage from response
+    const usage = event.usage;
+    if (usage) {
+      if (usage.input !== undefined) state.inputTokens = usage.input;
+      if (usage.output !== undefined) state.outputTokens = usage.output;
+    }
+
     state.lastUpdate = Date.now();
 
     // Request footer re-render
@@ -161,6 +173,8 @@ export default function (pi: ExtensionAPI) {
     state.remainingDay = null;
     state.remainingMonth = null;
     state.lastUpdate = 0;
+    state.inputTokens = 0;
+    state.outputTokens = 0;
   });
 
   // Reset rate limits on compaction (new session state)
@@ -170,6 +184,8 @@ export default function (pi: ExtensionAPI) {
     state.remainingDay = null;
     state.remainingMonth = null;
     state.lastUpdate = 0;
+    state.inputTokens = 0;
+    state.outputTokens = 0;
     requestFooterRender();
   });
 
