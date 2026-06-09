@@ -450,16 +450,7 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: vllmCompat,
       },
-      {
-        id: "llama-3.3-70b-instruct",
-        name: "Llama 3.3 70B Instruct",
-        reasoning: false,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 131072,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
+
       // Not in HTML documentation
       // {
       //   id: "llama-3.1-sauerkrautlm-70b-instruct",
@@ -546,16 +537,7 @@ export default function (pi: ExtensionAPI) {
         compat: vllmCompat,
       },
       // Vision models (text + image)
-      {
-        id: "gemma-3-27b-it",
-        name: "Gemma 3 27B Instruct (Vision)",
-        reasoning: false,
-        input: ["text", "image"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 131072,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
+
       {
         id: "gemma-4-31b-it",
         name: "Gemma 4 31B Instruct (Vision)",
@@ -607,26 +589,7 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: qwenCompat,
       },
-      {
-        id: "qwen3.5-27b",
-        name: "Qwen 3.5 27B (Vision)",
-        reasoning: true,
-        input: ["text", "image"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 262144,
-        maxTokens: 8192,
-        compat: qwenCompat,
-      },
-      {
-        id: "qwen3.5-35b-a3b",
-        name: "Qwen 3.5 35B A3B (Vision)",
-        reasoning: true,
-        input: ["text", "image"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 262144,
-        maxTokens: 8192,
-        compat: qwenCompat,
-      },
+
       {
         id: "qwen3.6-35b-a3b",
         name: "Qwen 3.6 35B A3B (Vision)",

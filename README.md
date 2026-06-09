@@ -45,11 +45,10 @@ This extension registers a single provider: `academiccloud`. All models (includi
 
 ## Available Models
 
-**Note: this list is updated as of 2026/05/29**
+**Note: this list is updated as of 2026-06-09**
 
 - Apertus 70B Instruct 2509
 - Llama 3.1 8B Instruct
-- Llama 3.3 70B Instruct
 - Qwen 3 30B A3B Instruct 2507
 - GLM-4.7
 - Teuken 7B Instruct Research
@@ -57,13 +56,12 @@ This extension registers a single provider: `academiccloud`. All models (includi
 - Devstral 2 123B Instruct 2512 (Coding)
 - Qwen 3 Coder 30B A3B Instruct
 - OpenAI GPT OSS 120B
-- Gemma 3 27B Instruct (Vision)
 - Gemma 4 31B Instruct (Vision)
 - InternVL 3.5 30B A3B (Vision)
 - MedGemma 27B Instruct (Medical, Vision)
 - Mistral Large 3 675B Instruct 2512 (Vision)
 - Qwen 3 Omni 30B A3B Instruct (Multimodal)
-- Qwen 3.5 27B/35B/3.6 35B (Vision)
+- Qwen 3.6 35B A3B (Vision)
 - Qwen 3.5 122B A10B / 397B A17B (custom tool-call handler)
 
 ### Checking for Model Updates
