@@ -126,7 +126,7 @@ export default function (pi: ExtensionAPI) {
     });
   }
 
-  // Track rate limits and token usage from Academic Cloud API responses
+  // Track rate limits from Academic Cloud API responses (headers only)
   pi.on("after_provider_response", async (event: any, ctx) => {
     if (!isAcademicCloudModel(ctx.model)) {
       return;
@@ -153,17 +153,23 @@ export default function (pi: ExtensionAPI) {
     if (limitDay !== undefined) state.limitDay = parseInt(limitDay, 10);
     if (limitMonth !== undefined) state.limitMonth = parseInt(limitMonth, 10);
 
-    // Track token usage from response
-    const usage = event.usage;
-    if (usage) {
-      if (usage.input !== undefined) state.inputTokens = usage.input;
-      if (usage.output !== undefined) state.outputTokens = usage.output;
-    }
-
     state.lastUpdate = Date.now();
 
     // Request footer re-render
     requestFooterRender();
+  });
+
+  // Track token usage from message_end event
+  pi.on("message_end", async (event: any, ctx) => {
+    if (!isAcademicCloudModel(ctx.model)) {
+      return;
+    }
+
+    if (event.message.role === "assistant" && event.message.usage) {
+      state.inputTokens = event.message.usage.input || 0;
+      state.outputTokens = event.message.usage.output || 0;
+      requestFooterRender();
+    }
   });
 
   // Reset state on session start
