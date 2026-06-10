@@ -26,31 +26,39 @@ const __dirname = path.dirname(__filename);
 
 const ACADEMICCLOUD_BASE_URL = "https://chat-ai.academiccloud.de/v1";
 const OUTPUT_FILE = path.join(__dirname, "../upstream-models-report.md");
+const EXTENSION_SOURCE = path.join(__dirname, "../src/academiccloud.ts");
 
-// Models currently defined in the extension (from academiccloud.ts)
-const EXTENSION_MODELS = [
-  "apertus-70b-instruct-2509",
-  "meta-llama-3.1-8b-instruct",
-  "llama-3.3-70b-instruct",
-  "qwen3-30b-a3b-instruct-2507",
-  "glm-4.7",
-  "teuken-7b-instruct-research",
-  "deepseek-r1-distill-llama-70b",
-  "devstral-2-123b-instruct-2512",
-  "qwen3-coder-30b-a3b-instruct",
-  "openai-gpt-oss-120b",
-  "gemma-3-27b-it",
-  "gemma-4-31b-it",
-  "internvl3.5-30b-a3b",
-  "medgemma-27b-it",
-  "mistral-large-3-675b-instruct-2512",
-  "qwen3-omni-30b-a3b-instruct",
-  "qwen3.5-27b",
-  "qwen3.5-35b-a3b",
-  "qwen3.6-35b-a3b",
-  "qwen3.5-122b-a10b",
-  "qwen3.5-397b-a17b",
-];
+/**
+ * Extract model IDs from the extension source code.
+ * Parses the academiccloud.ts file and extracts all active (non-commented) model IDs.
+ */
+function extractExtensionModels(): string[] {
+  if (!fs.existsSync(EXTENSION_SOURCE)) {
+    console.warn(`Warning: Extension source not found at ${EXTENSION_SOURCE}`);
+    return [];
+  }
+
+  const source = fs.readFileSync(EXTENSION_SOURCE, "utf-8");
+  const modelIds: string[] = [];
+
+  // Split into lines and process each line
+  const lines = source.split("\n");
+  for (const line of lines) {
+    // Skip commented lines (both // and /* style)
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//") || trimmed.startsWith("*")) {
+      continue;
+    }
+
+    // Match model ID declarations: id: "model-id"
+    const idMatch = trimmed.match(/id:\s*["']([^"']+)["']/);
+    if (idMatch) {
+      modelIds.push(idMatch[1]);
+    }
+  }
+
+  return modelIds;
+}
 
 interface UpstreamModel {
   id: string;
@@ -248,6 +256,11 @@ async function main() {
   console.log("");
 
   try {
+    // Extract models from extension source code
+    const extensionModels = extractExtensionModels();
+    console.log(`Extracted ${extensionModels.length} models from extension source`);
+    console.log("");
+
     let upstreamModels: UpstreamModel[];
     try {
       upstreamModels = await fetchUpstreamModels();
@@ -264,10 +277,10 @@ async function main() {
     }
     
     console.log(`Found ${upstreamModels.length} models upstream`);
-    console.log(`Extension has ${EXTENSION_MODELS.length} models configured`);
+    console.log(`Extension has ${extensionModels.length} models configured`);
     console.log("");
 
-    const report = generateMarkdownReport(upstreamModels, EXTENSION_MODELS);
+    const report = generateMarkdownReport(upstreamModels, extensionModels);
 
     fs.writeFileSync(OUTPUT_FILE, report, "utf-8");
     console.log(`Report written to: ${OUTPUT_FILE}`);
@@ -275,10 +288,10 @@ async function main() {
 
     // Also print a summary to stdout
     const upstreamIds = new Set(upstreamModels.map((m) => m.id));
-    const extensionSet = new Set(EXTENSION_MODELS);
+    const extensionSet = new Set(extensionModels);
     
     const onlyUpstream = upstreamModels.filter((m) => !extensionSet.has(m.id));
-    const onlyExtension = EXTENSION_MODELS.filter((id) => !upstreamIds.has(id));
+    const onlyExtension = extensionModels.filter((id) => !upstreamIds.has(id));
 
     if (onlyUpstream.length > 0) {
       console.log("Models only in upstream (not in extension):");
