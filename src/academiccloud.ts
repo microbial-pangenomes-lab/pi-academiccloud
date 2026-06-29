@@ -62,6 +62,54 @@ function parseQwenToolCalls(
 }
 
 // =============================================================================
+// Tool call parser for Gemma 4 native <|tool_call> format
+// =============================================================================
+
+function parseGemma4ToolCalls(
+  text: string,
+): { name: string; arguments: Record<string, any> }[] {
+  const toolCalls: { name: string; arguments: Record<string, any> }[] = [];
+
+  // Gemma 4 / vLLM leaks native tool call tokens into the content field:
+  // <|tool_call>call:bash{command:<|"|>uv run foo.py<|"|>}<tool_call|>
+  // where <|"|> is Gemma's special token for a literal quote character.
+  const gemmaRegex = /<\|tool_call>([\s\S]*?)(?:<tool_call\|>|$)/g;
+  let match;
+  while ((match = gemmaRegex.exec(text)) !== null) {
+    const raw = match[1].trim();
+    // Normalise <|"|> → actual quote so we can attempt JSON parsing
+    const normalized = raw.replace(/<\|"\|>/g, '"');
+
+    // Try valid JSON first (e.g. {"name":"bash","arguments":{...}})
+    try {
+      const parsed = JSON.parse(normalized);
+      if (parsed.name) {
+        toolCalls.push({ name: parsed.name, arguments: parsed.arguments ?? parsed.parameters ?? {} });
+        continue;
+      }
+    } catch {}
+
+    // Parse Gemma's call:function_name{key:"value",...} format
+    const callMatch = normalized.match(/^call:(\w+)(\{[\s\S]*\})/);
+    if (callMatch) {
+      const funcName = callMatch[1];
+      const rawArgs = callMatch[2];
+      let args: Record<string, any> = {};
+      try {
+        // Keys are unquoted — {command:"val"} → {"command":"val"}
+        const jsonified = rawArgs.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+        args = JSON.parse(jsonified);
+      } catch {
+        try { args = JSON.parse(rawArgs); } catch {}
+      }
+      toolCalls.push({ name: funcName, arguments: args });
+    }
+  }
+
+  return toolCalls;
+}
+
+// =============================================================================
 // OpenAI message conversion
 // =============================================================================
 
@@ -388,6 +436,163 @@ function streamQwen35ToolFix(
 }
 
 // =============================================================================
+// Custom handler for Gemma 4 models with broken server-side tool call parsing.
+// The vLLM backend emits tool calls in Gemma's native <|tool_call> format
+// inside the content field instead of proper OpenAI tool_calls, and strips
+// them entirely in streaming mode. We work around this by using non-streaming
+// requests and parsing tool calls from the text content.
+// =============================================================================
+
+function streamGemma4ToolFix(
+  model: Model<Api>,
+  context: Context,
+  options?: SimpleStreamOptions,
+) {
+  const eventStream = createAssistantMessageEventStream();
+
+  (async () => {
+    const output: AssistantMessage = {
+      role: "assistant",
+      content: [],
+      api: model.api,
+      provider: model.provider,
+      model: model.id,
+      usage: {
+        input: 0,
+        output: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+        totalTokens: 0,
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+      },
+      stopReason: "stop",
+      timestamp: Date.now(),
+    };
+
+    try {
+      const apiKey = options?.apiKey ?? "";
+      const messages = convertMessages(context);
+
+      const params: any = {
+        model: model.id,
+        messages,
+        stream: false,
+        max_tokens: options?.maxTokens || model.maxTokens,
+      };
+
+      if (context.tools && context.tools.length > 0) {
+        params.tools = convertTools(context.tools);
+      }
+
+      if (options?.temperature !== undefined) {
+        params.temperature = options.temperature;
+      }
+
+      const response = await fetch(`${model.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(params),
+        signal: options?.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `API error: ${response.status} ${await response.text()}`,
+        );
+      }
+
+      await options?.onResponse?.({ status: response.status, headers: Object.fromEntries(response.headers.entries()) }, model);
+
+      const data = await response.json();
+      const choice = data.choices?.[0];
+      const message = choice?.message;
+
+      if (data.usage) {
+        output.usage.input = data.usage.prompt_tokens || 0;
+        output.usage.output = data.usage.completion_tokens || 0;
+        output.usage.totalTokens = data.usage.total_tokens || 0;
+      }
+
+      eventStream.push({ type: "start", partial: output });
+
+      // Prefer proper tool_calls from the API response
+      const apiToolCalls = message?.tool_calls;
+      if (apiToolCalls && apiToolCalls.length > 0) {
+        for (const tc of apiToolCalls) {
+          let args: Record<string, any> = {};
+          try { args = JSON.parse(tc.function?.arguments || "{}"); } catch {}
+          const toolCall: ToolCall = {
+            type: "toolCall",
+            id: tc.id || `toolcall-${crypto.randomUUID()}`,
+            name: tc.function?.name || "",
+            arguments: args,
+          };
+          output.content.push(toolCall);
+          const idx = output.content.length - 1;
+          eventStream.push({ type: "toolcall_start", contentIndex: idx, partial: output });
+          eventStream.push({ type: "toolcall_delta", contentIndex: idx, delta: tc.function?.arguments || "{}", partial: output });
+          eventStream.push({ type: "toolcall_end", contentIndex: idx, toolCall, partial: output });
+        }
+        output.stopReason = "toolUse";
+        eventStream.push({ type: "done", reason: "toolUse", message: output });
+      } else if (message?.content) {
+        const content = message.content as string;
+        const parsedToolCalls = parseGemma4ToolCalls(content);
+
+        if (parsedToolCalls.length > 0) {
+          for (const tc of parsedToolCalls) {
+            const toolCall: ToolCall = {
+              type: "toolCall",
+              id: `toolcall-${crypto.randomUUID()}`,
+              name: tc.name,
+              arguments: tc.arguments,
+            };
+            output.content.push(toolCall);
+            const idx = output.content.length - 1;
+            eventStream.push({ type: "toolcall_start", contentIndex: idx, partial: output });
+            eventStream.push({ type: "toolcall_delta", contentIndex: idx, delta: JSON.stringify(tc.arguments), partial: output });
+            eventStream.push({ type: "toolcall_end", contentIndex: idx, toolCall, partial: output });
+          }
+          output.stopReason = "toolUse";
+          eventStream.push({ type: "done", reason: "toolUse", message: output });
+        } else {
+          const text = content.replace(/^\s+/, "");
+          if (text) {
+            output.content.push({ type: "text", text } as TextContent);
+            const idx = output.content.length - 1;
+            eventStream.push({ type: "text_start", contentIndex: idx, partial: output });
+            eventStream.push({ type: "text_delta", contentIndex: idx, delta: text, partial: output });
+            eventStream.push({ type: "text_end", contentIndex: idx, content: text, partial: output });
+          }
+          output.stopReason = "stop";
+          eventStream.push({ type: "done", reason: "stop", message: output });
+        }
+      } else {
+        output.stopReason = "stop";
+        eventStream.push({ type: "done", reason: "stop", message: output });
+      }
+
+      eventStream.end();
+    } catch (error) {
+      output.stopReason = options?.signal?.aborted ? "aborted" : "error";
+      output.errorMessage =
+        error instanceof Error ? error.message : JSON.stringify(error);
+      eventStream.push({
+        type: "error",
+        reason: output.stopReason,
+        error: output,
+      });
+      eventStream.end();
+    }
+  })();
+
+  return eventStream;
+}
+
+// =============================================================================
 // Extension Entry Point
 // =============================================================================
 
@@ -421,6 +626,13 @@ export default function (pi: ExtensionAPI) {
   pi.registerProvider("academiccloud-qwen35-api", {
     api: "academiccloud-qwen35-tool-fix",
     streamSimple: streamQwen35ToolFix,
+  });
+
+  // Same workaround for Gemma 4 — vLLM leaks Gemma's native <|tool_call>
+  // token format into the content field instead of proper OpenAI tool_calls.
+  pi.registerProvider("academiccloud-gemma4-api", {
+    api: "academiccloud-gemma4-tool-fix",
+    streamSimple: streamGemma4ToolFix,
   });
 
   // Register provider with models from Chat AI Academic Cloud
@@ -541,6 +753,7 @@ export default function (pi: ExtensionAPI) {
       {
         id: "gemma-4-31b-it",
         name: "Gemma 4 31B Instruct (Vision)",
+        api: "academiccloud-gemma4-tool-fix",
         reasoning: false,
         input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
