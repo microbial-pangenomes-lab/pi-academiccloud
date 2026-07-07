@@ -662,18 +662,6 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: vllmCompat,
       },
-
-      // Not in HTML documentation
-      // {
-      //   id: "llama-3.1-sauerkrautlm-70b-instruct",
-      //   name: "Llama 3.1 SauerkrautLM 70B (German)",
-      //   reasoning: false,
-      //   input: ["text"],
-      //   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      //   contextWindow: 128000,
-      //   maxTokens: 8192,
-      //   compat: vllmCompat,
-      // },
       {
         id: "qwen3-30b-a3b-instruct-2507",
         name: "Qwen 3 30B A3B Instruct 2507",
@@ -695,28 +683,6 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: vllmCompat,
       },
-      {
-        id: "teuken-7b-instruct-research",
-        name: "Teuken 7B Instruct Research (European Languages)",
-        reasoning: false,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 128000,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
-      // Reasoning models
-      {
-        id: "deepseek-r1-distill-llama-70b",
-        name: "DeepSeek R1 Distill Llama 70B",
-        reasoning: true,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 131072,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
-
       // Coding models
       {
         id: "devstral-2-123b-instruct-2512",
@@ -727,16 +693,6 @@ export default function (pi: ExtensionAPI) {
         contextWindow: 262144,
         maxTokens: 8192,
         compat: vllmCompat,
-      },
-      {
-        id: "qwen3-coder-30b-a3b-instruct",
-        name: "Qwen 3 Coder 30B A3B Instruct",
-        reasoning: true,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 262144,
-        maxTokens: 8192,
-        compat: qwenCompat,
       },
       {
         id: "qwen3-coder-next",
@@ -768,16 +724,6 @@ export default function (pi: ExtensionAPI) {
         input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 262144,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
-      {
-        id: "internvl3.5-30b-a3b",
-        name: "InternVL 3.5 30B A3B (Vision)",
-        reasoning: false,
-        input: ["text", "image"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 40960,
         maxTokens: 8192,
         compat: vllmCompat,
       },
