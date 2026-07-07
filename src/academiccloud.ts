@@ -269,9 +269,18 @@ function streamQwen35ToolFix(
       const choice = data.choices?.[0];
       const message = choice?.message;
 
-      // Parse usage
+      // Parse usage. Mirror the built-in openai-completions handler: vLLM
+      // reports server-side prefix-cache hits via prompt_tokens_details.
+      // cached_tokens (currently null on Academic Cloud, but populated on other
+      // vLLM deployments and if Academic Cloud enables usage reporting).
       if (data.usage) {
-        output.usage.input = data.usage.prompt_tokens || 0;
+        const promptTokens = data.usage.prompt_tokens || 0;
+        const cacheRead =
+          data.usage.prompt_tokens_details?.cached_tokens ??
+          data.usage.prompt_cache_hit_tokens ??
+          0;
+        output.usage.input = Math.max(0, promptTokens - cacheRead);
+        output.usage.cacheRead = cacheRead;
         output.usage.output = data.usage.completion_tokens || 0;
         output.usage.totalTokens = data.usage.total_tokens || 0;
       }
@@ -511,7 +520,13 @@ function streamGemma4ToolFix(
       const message = choice?.message;
 
       if (data.usage) {
-        output.usage.input = data.usage.prompt_tokens || 0;
+        const promptTokens = data.usage.prompt_tokens || 0;
+        const cacheRead =
+          data.usage.prompt_tokens_details?.cached_tokens ??
+          data.usage.prompt_cache_hit_tokens ??
+          0;
+        output.usage.input = Math.max(0, promptTokens - cacheRead);
+        output.usage.cacheRead = cacheRead;
         output.usage.output = data.usage.completion_tokens || 0;
         output.usage.totalTokens = data.usage.total_tokens || 0;
       }
