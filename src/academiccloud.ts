@@ -699,8 +699,8 @@ export default function (pi: ExtensionAPI) {
         compat: vllmCompat,
       },
       {
-        id: "deepseek-v4-flash",
-        name: "DeepSeek V4 Flash",
+        id: "deepseek-v4-flash-0731",
+        name: "DeepSeek V4 Flash 0731",
         reasoning: false,
         input: ["text"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -763,17 +763,6 @@ export default function (pi: ExtensionAPI) {
         compat: vllmCompat,
       },
       {
-        id: "medgemma-27b-it",
-        name: "MedGemma 27B Instruct (Medical, Vision)",
-        reasoning: false,
-        input: ["text", "image"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 131072,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
-
-      {
         id: "qwen3-omni-30b-a3b-instruct",
         name: "Qwen 3 Omni 30B A3B Instruct (Multimodal)",
         reasoning: true,
@@ -795,8 +784,8 @@ export default function (pi: ExtensionAPI) {
         compat: qwenCompat,
       },
       {
-        id: "qwen3.6-27b",
-        name: "Qwen 3.6 27B",
+        id: "qwen3.8-27b",
+        name: "Qwen 3.8 27B",
         reasoning: true,
         input: ["text"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
