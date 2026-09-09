@@ -45,12 +45,13 @@ This extension registers a single provider: `academiccloud`. All models (includi
 
 ## Available Models
 
-**Note: this list is updated as of 2026-08-31**
+**Note: this list is updated as of 2026-09-09**
 
 - Apertus 70B Instruct 2509
 - Llama 3.1 8B Instruct
 - Qwen 3 30B A3B Instruct 2507
 - GLM-4.7
+- GLM 5.3 Flash (Multimodal)
 - DeepSeek V4 Flash 0731
 - Mistral Medium 3.5 128B
 - Devstral 2 123B Instruct 2512 (Coding)

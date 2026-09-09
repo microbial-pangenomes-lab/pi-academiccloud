@@ -752,6 +752,16 @@ export default function (pi: ExtensionAPI) {
       // Vision models (text + image)
 
       {
+        id: "glm-5.3-flash",
+        name: "GLM 5.3 Flash (Multimodal)",
+        reasoning: false,
+        input: ["text", "image"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 131072,
+        maxTokens: 8192,
+        compat: vllmCompat,
+      },
+      {
         id: "gemma-4-31b-it",
         name: "Gemma 4 31B Instruct (Vision)",
         api: "academiccloud-gemma4-tool-fix",
