@@ -689,16 +689,6 @@ export default function (pi: ExtensionAPI) {
       },
 
       {
-        id: "glm-4.7",
-        name: "GLM-4.7",
-        reasoning: false,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 202752,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
-      {
         id: "deepseek-v4-flash-0731",
         name: "DeepSeek V4 Flash 0731",
         reasoning: false,
@@ -803,19 +793,8 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: qwenCompat,
       },
-      // Qwen 3.5 122B/397B route through the custom tool-fix API handler
+      // Qwen 3.5 397B routes through the custom tool-fix API handler
       // registered above (per-model `api` override).
-      {
-        id: "qwen3.5-122b-a10b",
-        name: "Qwen 3.5 122B A10B (Vision)",
-        api: "academiccloud-qwen35-tool-fix",
-        reasoning: true,
-        input: ["text", "image"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 262144,
-        maxTokens: 8192,
-        compat: qwenCompat,
-      },
       {
         id: "qwen3.5-397b-a17b",
         name: "Qwen 3.5 397B A17B (Vision)",
