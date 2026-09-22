@@ -2,15 +2,18 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
   type Api,
   type AssistantMessage,
-  type Context,
   type ImageContent,
   type Model,
   type SimpleStreamOptions,
   type TextContent,
   type ThinkingContent,
+  type Tool,
   type ToolCall,
   type ToolResultMessage,
+  type TranscriptContext,
   createAssistantMessageEventStream,
+  getCurrentSystemPrompt,
+  getCurrentTools,
 } from "@earendil-works/pi-ai";
 
 // =============================================================================
@@ -113,11 +116,12 @@ function parseGemma4ToolCalls(
 // OpenAI message conversion
 // =============================================================================
 
-function convertMessages(context: Context): any[] {
+function convertMessages(context: TranscriptContext): any[] {
   const messages: any[] = [];
 
-  if (context.systemPrompt) {
-    messages.push({ role: "system", content: context.systemPrompt });
+  const systemPrompt = getCurrentSystemPrompt(context.messages);
+  if (systemPrompt) {
+    messages.push({ role: "system", content: systemPrompt });
   }
 
   for (let i = 0; i < context.messages.length; i++) {
@@ -175,8 +179,7 @@ function convertMessages(context: Context): any[] {
   return messages;
 }
 
-function convertTools(tools: Context["tools"]): any[] {
-  if (!tools) return [];
+function convertTools(tools: Tool[]): any[] {
   return tools.map((tool) => ({
     type: "function",
     function: {
@@ -197,7 +200,7 @@ function convertTools(tools: Context["tools"]): any[] {
 
 function streamQwen35ToolFix(
   model: Model<Api>,
-  context: Context,
+  context: TranscriptContext,
   options?: SimpleStreamOptions,
 ) {
   const eventStream = createAssistantMessageEventStream();
@@ -232,8 +235,9 @@ function streamQwen35ToolFix(
         max_tokens: options?.maxTokens || model.maxTokens,
       };
 
-      if (context.tools && context.tools.length > 0) {
-        params.tools = convertTools(context.tools);
+      const tools = getCurrentTools(context.messages);
+      if (tools.length > 0) {
+        params.tools = convertTools(tools);
       }
 
       if (model.reasoning && options?.reasoning) {
@@ -454,7 +458,7 @@ function streamQwen35ToolFix(
 
 function streamGemma4ToolFix(
   model: Model<Api>,
-  context: Context,
+  context: TranscriptContext,
   options?: SimpleStreamOptions,
 ) {
   const eventStream = createAssistantMessageEventStream();
@@ -489,8 +493,9 @@ function streamGemma4ToolFix(
         max_tokens: options?.maxTokens || model.maxTokens,
       };
 
-      if (context.tools && context.tools.length > 0) {
-        params.tools = convertTools(context.tools);
+      const tools = getCurrentTools(context.messages);
+      if (tools.length > 0) {
+        params.tools = convertTools(tools);
       }
 
       if (options?.temperature !== undefined) {
@@ -629,27 +634,6 @@ export default function (pi: ExtensionAPI) {
     thinkingFormat: "qwen" as const,
   };
 
-  // Register the custom API handler for Qwen 3.5 models with broken
-  // server-side tool call parsing. The vLLM backend emits tool calls as
-  // <tool_call> text in the content field instead of proper OpenAI
-  // tool_calls, and strips them entirely in streaming mode. The custom
-  // streamSimple handler works around this by using non-streaming requests
-  // and parsing tool calls from the text content.
-  //
-  // streamSimple is registered globally keyed by `api` name, so individual
-  // models opt in via their per-model `api` override below.
-  pi.registerProvider("academiccloud-qwen35-api", {
-    api: "academiccloud-qwen35-tool-fix",
-    streamSimple: streamQwen35ToolFix,
-  });
-
-  // Same workaround for Gemma 4 — vLLM leaks Gemma's native <|tool_call>
-  // token format into the content field instead of proper OpenAI tool_calls.
-  pi.registerProvider("academiccloud-gemma4-api", {
-    api: "academiccloud-gemma4-tool-fix",
-    streamSimple: streamGemma4ToolFix,
-  });
-
   // Register provider with models from Chat AI Academic Cloud
   pi.registerProvider("academiccloud", {
     baseUrl: "https://chat-ai.academiccloud.de/v1",
@@ -752,17 +736,6 @@ export default function (pi: ExtensionAPI) {
         compat: vllmCompat,
       },
       {
-        id: "gemma-4-31b-it",
-        name: "Gemma 4 31B Instruct (Vision)",
-        api: "academiccloud-gemma4-tool-fix",
-        reasoning: false,
-        input: ["text", "image"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 262144,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
-      {
         id: "qwen3-omni-30b-a3b-instruct",
         name: "Qwen 3 Omni 30B A3B Instruct (Multimodal)",
         reasoning: true,
@@ -793,8 +766,43 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: qwenCompat,
       },
-      // Qwen 3.5 397B routes through the custom tool-fix API handler
-      // registered above (per-model `api` override).
+    ]
+  });
+
+  // Gemma 4 and Qwen 3.5 397B each get their own dedicated provider so their
+  // custom tool-call-parsing workaround (see streamGemma4ToolFix /
+  // streamQwen35ToolFix above) is wired up correctly. A per-model `api`
+  // override pointing at a name registered elsewhere does NOT work: the
+  // pi runtime only invokes a provider's `streamSimple` for models whose
+  // `api` matches that SAME provider's own `api` (pi.registerProvider has
+  // no mechanism to publish a streamSimple handler for use by other
+  // providers' models).
+  pi.registerProvider("academiccloud-gemma4", {
+    baseUrl: "https://chat-ai.academiccloud.de/v1",
+    apiKey: "$ACADEMICCLOUD_API_KEY",
+    api: "academiccloud-gemma4-tool-fix",
+    streamSimple: streamGemma4ToolFix,
+    models: [
+      {
+        id: "gemma-4-31b-it",
+        name: "Gemma 4 31B Instruct (Vision)",
+        api: "academiccloud-gemma4-tool-fix",
+        reasoning: false,
+        input: ["text", "image"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 262144,
+        maxTokens: 8192,
+        compat: vllmCompat,
+      },
+    ],
+  });
+
+  pi.registerProvider("academiccloud-qwen35", {
+    baseUrl: "https://chat-ai.academiccloud.de/v1",
+    apiKey: "$ACADEMICCLOUD_API_KEY",
+    api: "academiccloud-qwen35-tool-fix",
+    streamSimple: streamQwen35ToolFix,
+    models: [
       {
         id: "qwen3.5-397b-a17b",
         name: "Qwen 3.5 397B A17B (Vision)",
@@ -806,6 +814,6 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: qwenCompat,
       },
-    ]
+    ],
   });
 }

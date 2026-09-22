@@ -39,9 +39,15 @@ export ACADEMICCLOUD_API_KEY="your-api-key"
 
 Or add it to your shell configuration file (`.bashrc`, `.zshrc`, etc.).
 
-## Provider
+## Providers
 
-This extension registers a single provider: `academiccloud`. All models (including the Qwen 3.5 122B and 397B variants) are available through this provider. The Qwen 3.5 122B/397B models use a custom API handler internally to work around server-side tool call parsing limitations, but this is transparent to the user.
+This extension registers three providers, all pointed at the same Academic Cloud endpoint and API key:
+
+- `academiccloud` — most models.
+- `academiccloud-gemma4` — Gemma 4 31B Instruct only.
+- `academiccloud-qwen35` — Qwen 3.5 397B A17B only.
+
+Gemma 4 and Qwen 3.5 397B get their own provider because their vLLM backend has broken server-side tool-call parsing; each needs a custom `streamSimple` handler that reparses tool calls from the raw response text. Pi only wires up a provider's custom `streamSimple` for models registered under that *same* provider, so each workaround needs its own dedicated provider rather than living alongside the regular models under `academiccloud`. This is otherwise transparent to the user beyond selecting the model — e.g. `pi --provider academiccloud-gemma4 --model gemma-4-31b-it`.
 
 ## Available Models
 
