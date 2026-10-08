@@ -17,17 +17,14 @@ pi install https://github.com/microbial-pangenomes-lab/pi-academiccloud
 git clone https://github.com/microbial-pangenomes-lab/pi-academiccloud.git
 ```
 
-2. Install dependencies and build:
+2. Install it as a local package (Pi loads the TypeScript sources directly, no build step needed):
 ```bash
-cd pi-academiccloud
-npm install
-npm run build
+pi install ./pi-academiccloud
 ```
 
-3. Copy the built extension to your Pi extensions directory:
-```bash
-cp dist/academiccloud.js ~/.pi/agent/extensions/
-```
+### Development
+
+`npm install` pulls in TypeScript and the Pi packages as dev dependencies for type-checking (`npm run typecheck`). They are not installed when Pi installs the extension, since Pi provides them at runtime.
 
 ## Configuration
 
