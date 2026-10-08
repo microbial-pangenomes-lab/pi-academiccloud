@@ -240,11 +240,10 @@ function streamQwen35ToolFix(
         params.tools = convertTools(tools);
       }
 
-      if (model.reasoning && options?.reasoning) {
-        params.enable_thinking = true;
-      } else {
-        params.enable_thinking = false;
-      }
+      // vLLM ignores a top-level `enable_thinking`; it must go through the chat template.
+      params.chat_template_kwargs = {
+        enable_thinking: !!(model.reasoning && options?.reasoning),
+      };
 
       if (options?.temperature !== undefined) {
         params.temperature = options.temperature;
@@ -498,6 +497,10 @@ function streamGemma4ToolFix(
         params.tools = convertTools(tools);
       }
 
+      params.chat_template_kwargs = {
+        enable_thinking: !!(model.reasoning && options?.reasoning),
+      };
+
       if (options?.temperature !== undefined) {
         params.temperature = options.temperature;
       }
@@ -537,6 +540,15 @@ function streamGemma4ToolFix(
       }
 
       eventStream.push({ type: "start", partial: output });
+
+      const reasoning = (message?.reasoning_content ?? message?.reasoning ?? "").trim();
+      if (reasoning) {
+        output.content.push({ type: "thinking", thinking: reasoning } as ThinkingContent);
+        const idx = output.content.length - 1;
+        eventStream.push({ type: "thinking_start", contentIndex: idx, partial: output });
+        eventStream.push({ type: "thinking_delta", contentIndex: idx, delta: reasoning, partial: output });
+        eventStream.push({ type: "thinking_end", contentIndex: idx, content: reasoning, partial: output });
+      }
 
       // Prefer proper tool_calls from the API response
       const apiToolCalls = message?.tool_calls;
@@ -625,13 +637,28 @@ export default function (pi: ExtensionAPI) {
     supportsStrictMode: false,
   };
 
+  // The vLLM backend ignores a top-level `enable_thinking` (pi's "qwen" format);
+  // thinking is only toggled via `chat_template_kwargs.enable_thinking`.
   const qwenCompat = {
     supportsDeveloperRole: false,
     supportsStore: false,
     supportsReasoningEffort: false,
     maxTokensField: "max_tokens" as const,
     supportsStrictMode: true,
-    thinkingFormat: "qwen" as const,
+    thinkingFormat: "qwen-chat-template" as const,
+  };
+
+  // Non-Qwen models whose chat template honours `enable_thinking` (DeepSeek, GLM)
+  const chatTemplateThinkingCompat = {
+    ...vllmCompat,
+    thinkingFormat: "chat-template" as const,
+    chatTemplateKwargs: { enable_thinking: { $var: "thinking.enabled" as const } },
+  };
+
+  // Models that take an OpenAI-style `reasoning_effort` (gpt-oss, Mistral)
+  const reasoningEffortCompat = {
+    ...vllmCompat,
+    supportsReasoningEffort: true,
   };
 
   // Register provider with models from Chat AI Academic Cloud
@@ -664,7 +691,7 @@ export default function (pi: ExtensionAPI) {
       {
         id: "qwen3-30b-a3b-instruct-2507",
         name: "Qwen 3 30B A3B Instruct 2507",
-        reasoning: true,
+        reasoning: false,
         input: ["text"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 262144,
@@ -675,22 +702,24 @@ export default function (pi: ExtensionAPI) {
       {
         id: "deepseek-v4-flash-0731",
         name: "DeepSeek V4 Flash 0731",
-        reasoning: false,
+        reasoning: true,
         input: ["text"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 1048576,
         maxTokens: 8192,
-        compat: vllmCompat,
+        compat: chatTemplateThinkingCompat,
       },
       {
         id: "mistral-medium-3.5-128b",
         name: "Mistral Medium 3.5 128B",
-        reasoning: false,
+        reasoning: true,
+        // Only reasoning_effort "none" and "high" are accepted
+        thinkingLevelMap: { off: "none", minimal: null, low: null, medium: null, high: "high" },
         input: ["text"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 262144,
         maxTokens: 8192,
-        compat: vllmCompat,
+        compat: reasoningEffortCompat,
       },
       // Coding models
       {
@@ -706,7 +735,7 @@ export default function (pi: ExtensionAPI) {
       {
         id: "qwen3-coder-next",
         name: "Qwen 3 Coder Next (Coding)",
-        reasoning: true,
+        reasoning: false,
         input: ["text"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 262144,
@@ -716,29 +745,31 @@ export default function (pi: ExtensionAPI) {
       {
         id: "openai-gpt-oss-120b",
         name: "OpenAI GPT OSS 120B",
-        reasoning: false,
+        reasoning: true,
+        // Harmony has no way to disable reasoning; low is the floor
+        thinkingLevelMap: { off: null, minimal: null },
         input: ["text"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 128000,
         maxTokens: 8192,
-        compat: vllmCompat,
+        compat: reasoningEffortCompat,
       },
       // Vision models (text + image)
 
       {
         id: "glm-5.3-flash",
         name: "GLM 5.3 Flash (Multimodal)",
-        reasoning: false,
+        reasoning: true,
         input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 1048576,
         maxTokens: 8192,
-        compat: vllmCompat,
+        compat: chatTemplateThinkingCompat,
       },
       {
         id: "qwen3-omni-30b-a3b-instruct",
         name: "Qwen 3 Omni 30B A3B Instruct (Multimodal)",
-        reasoning: true,
+        reasoning: false,
         input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 65536,
@@ -787,7 +818,7 @@ export default function (pi: ExtensionAPI) {
         id: "gemma-4-31b-it",
         name: "Gemma 4 31B Instruct (Vision)",
         api: "academiccloud-gemma4-tool-fix",
-        reasoning: false,
+        reasoning: true,
         input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 262144,
