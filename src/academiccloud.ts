@@ -655,12 +655,6 @@ export default function (pi: ExtensionAPI) {
     chatTemplateKwargs: { enable_thinking: { $var: "thinking.enabled" as const } },
   };
 
-  // Models that take an OpenAI-style `reasoning_effort` (gpt-oss, Mistral)
-  const reasoningEffortCompat = {
-    ...vllmCompat,
-    supportsReasoningEffort: true,
-  };
-
   // Register provider with models from Chat AI Academic Cloud
   pi.registerProvider("academiccloud", {
     baseUrl: "https://chat-ai.academiccloud.de/v1",
@@ -668,16 +662,6 @@ export default function (pi: ExtensionAPI) {
     api: "openai-completions",
     models: [
       // Text models
-      {
-        id: "apertus-70b-instruct-2509",
-        name: "Apertus 70B Instruct 2509",
-        reasoning: false,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 65536,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
       {
         id: "meta-llama-3.1-8b-instruct",
         name: "Llama 3.1 8B Instruct",
@@ -709,29 +693,7 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: chatTemplateThinkingCompat,
       },
-      {
-        id: "mistral-medium-3.5-128b",
-        name: "Mistral Medium 3.5 128B",
-        reasoning: true,
-        // Only reasoning_effort "none" and "high" are accepted
-        thinkingLevelMap: { off: "none", minimal: null, low: null, medium: null, high: "high" },
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 262144,
-        maxTokens: 8192,
-        compat: reasoningEffortCompat,
-      },
       // Coding models
-      {
-        id: "devstral-2-123b-instruct-2512",
-        name: "Devstral 2 123B Instruct 2512 (Coding)",
-        reasoning: false,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 262144,
-        maxTokens: 8192,
-        compat: vllmCompat,
-      },
       {
         id: "qwen3-coder-next",
         name: "Qwen 3 Coder Next (Coding)",
@@ -741,18 +703,6 @@ export default function (pi: ExtensionAPI) {
         contextWindow: 262144,
         maxTokens: 8192,
         compat: qwenCompat,
-      },
-      {
-        id: "openai-gpt-oss-120b",
-        name: "OpenAI GPT OSS 120B",
-        reasoning: true,
-        // Harmony has no way to disable reasoning; low is the floor
-        thinkingLevelMap: { off: null, minimal: null },
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 128000,
-        maxTokens: 8192,
-        compat: reasoningEffortCompat,
       },
       // Vision models (text + image)
 

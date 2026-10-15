@@ -48,16 +48,12 @@ Gemma 4 and Qwen 3.5 397B get their own provider because their vLLM backend has 
 
 ## Available Models
 
-**Note: this list is updated as of 2026-09-21**
+**Note: this list is updated as of 2026-10-15**
 
-- Apertus 70B Instruct 2509
 - Llama 3.1 8B Instruct
 - Qwen 3 30B A3B Instruct 2507
 - DeepSeek V4 Flash 0731 (Reasoning)
-- Mistral Medium 3.5 128B (Reasoning: off/high only)
-- Devstral 2 123B Instruct 2512 (Coding)
 - Qwen 3 Coder Next (Coding)
-- OpenAI GPT OSS 120B (Reasoning, cannot be turned off)
 - GLM 5.3 Flash (Multimodal, Reasoning)
 - Gemma 4 31B Instruct (Vision, Reasoning, custom tool-call handler)
 - Qwen 3 Omni 30B A3B Instruct (Multimodal)
