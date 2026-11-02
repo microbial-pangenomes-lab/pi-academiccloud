@@ -682,7 +682,19 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: qwenCompat,
       },
-
+      // The vLLM backend for EuroLLM has no tool-call parser configured: any
+      // request carrying `tools` is rejected with a 400, so it is only usable
+      // with `pi --no-tools`.
+      {
+        id: "eurollm-22b-instruct-2512",
+        name: "EuroLLM 22B Instruct 2512 (no tool calls)",
+        reasoning: false,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 32768,
+        maxTokens: 8192,
+        compat: vllmCompat,
+      },
       {
         id: "deepseek-v4-flash-0731",
         name: "DeepSeek V4 Flash 0731",

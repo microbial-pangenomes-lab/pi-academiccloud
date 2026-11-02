@@ -36,6 +36,19 @@ export ACADEMICCLOUD_API_KEY="your-api-key"
 
 Or add it to your shell configuration file (`.bashrc`, `.zshrc`, etc.).
 
+API keys are managed in the Saia API key dashboard at https://saia.gwdg.de.
+
+## Rate Limits
+
+Since the migration to the Saia 2 platform (November 2026) the default limits, shared between the API and the Chat-AI web interface, are:
+
+- 2 requests per 10 seconds
+- 200 requests per hour
+- 400 requests per day
+- 3000 requests per month
+
+Every model call counts as a request, including each step of an agent's tool-use loop, so the daily limit can be reached quickly. While an Academic Cloud model is active, the footer shows usage for each window (`10s:1/2 hr:12/200 day:40/400 mo:350/3000`), read from the `x-ratelimit-*` response headers; an exhausted window also shows the time until it resets. Contact support@gwdg.de if you need higher limits.
+
 ## Providers
 
 This extension registers three providers, all pointed at the same Academic Cloud endpoint and API key:
@@ -48,10 +61,11 @@ Gemma 4 and Qwen 3.5 397B get their own provider because their vLLM backend has 
 
 ## Available Models
 
-**Note: this list is updated as of 2026-10-15**
+**Note: this list is updated as of 2026-11-02**
 
 - Llama 3.1 8B Instruct
 - Qwen 3 30B A3B Instruct 2507
+- EuroLLM 22B Instruct 2512 (no tool calls — use with `pi --no-tools`)
 - DeepSeek V4 Flash 0731 (Reasoning)
 - Qwen 3 Coder Next (Coding)
 - GLM 5.3 Flash (Multimodal, Reasoning)
