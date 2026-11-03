@@ -655,6 +655,13 @@ export default function (pi: ExtensionAPI) {
     chatTemplateKwargs: { enable_thinking: { $var: "thinking.enabled" as const } },
   };
 
+  // Mistral-tokenizer models reject any `chat_template_kwargs` (400); reasoning
+  // is controlled via `reasoning_effort` instead.
+  const reasoningEffortCompat = {
+    ...vllmCompat,
+    supportsReasoningEffort: true,
+  };
+
   // Register provider with models from Chat AI Academic Cloud
   pi.registerProvider("academiccloud", {
     baseUrl: "https://chat-ai.academiccloud.de/v1",
@@ -704,6 +711,28 @@ export default function (pi: ExtensionAPI) {
         contextWindow: 1048576,
         maxTokens: 8192,
         compat: chatTemplateThinkingCompat,
+      },
+      {
+        id: "deepseek-v4.1-flash-1017",
+        name: "DeepSeek V4.1 Flash 1017",
+        reasoning: true,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 1048576,
+        maxTokens: 8192,
+        compat: chatTemplateThinkingCompat,
+      },
+      {
+        id: "mistral-large-4-1t-a52b",
+        name: "Mistral Large 4 1T A52B (Vision)",
+        reasoning: true,
+        // Always reasons: reasoning_effort accepts only low/medium/high ("none" is rejected)
+        thinkingLevelMap: { off: null, minimal: null },
+        input: ["text", "image"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 624576,
+        maxTokens: 8192,
+        compat: reasoningEffortCompat,
       },
       // Coding models
       {
