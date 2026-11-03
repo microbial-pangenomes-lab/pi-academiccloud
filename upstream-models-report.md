@@ -6,40 +6,16 @@
 ## Summary
 
 - **Models in upstream:** 14
-- **Models in extension:** 13
-- **Models only in upstream (missing from extension):** 1
+- **Models in extension:** 14
+- **Models only in upstream (missing from extension):** 0
 - **Models only in extension (not found upstream):** 0
-- **Models in both:** 13
+- **Models in both:** 14
 
 ---
 
 ## Models Only in Upstream (Add to Extension)
 
-### `glm-5.3`
-
-- **Name:** glm-5.3
-- **Owned by:** chat-ai
-- **Created:** 2026-10-26T16:22:46.000Z
-- **Full model info:**
-```json
-{
-  "id": "glm-5.3",
-  "object": "model",
-  "owned_by": "chat-ai",
-  "created": 1793031766,
-  "name": "GLM 5.3",
-  "status": "ready",
-  "demand": 0,
-  "input": [
-    "text"
-  ],
-  "output": [
-    "text",
-    "thought"
-  ]
-}
-```
-
+*No models found only in upstream.*
 
 ---
 
@@ -56,6 +32,7 @@
 - `eurollm-22b-instruct-2512` - chat-ai
 - `deepseek-v4-flash-0731` - chat-ai
 - `deepseek-v4.1-flash-1017` - chat-ai
+- `glm-5.3` - chat-ai
 - `mistral-large-4-1t-a52b` - chat-ai
 - `qwen3-coder-next` - chat-ai
 - `glm-5.3-flash` - chat-ai
@@ -69,28 +46,7 @@
 
 ## Recommended Actions
 
-
-### Add New Models to Extension
-
-The following models are available upstream but not configured in the extension.
-To add them, update `src/academiccloud.ts` and add entries to the `models` array:
-
-```typescript
-{
-  id: "<model-id>",
-  name: "<Human-readable name>",
-  reasoning: false, // or true if it's a reasoning model
-  input: ["text"], // or ["text", "image"] for vision models
-  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-  contextWindow: <context_window_size>,
-  maxTokens: 8192,
-  compat: vllmCompat, // or qwenCompat for Qwen models with reasoning
-}
-```
-
-**Models to add:**
-- [ ] `glm-5.3`
-
+All upstream models are already configured in the extension.
 
 
 

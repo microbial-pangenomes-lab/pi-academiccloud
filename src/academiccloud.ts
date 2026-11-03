@@ -722,6 +722,22 @@ export default function (pi: ExtensionAPI) {
         maxTokens: 8192,
         compat: chatTemplateThinkingCompat,
       },
+      // Always reasons: unlike glm-5.3-flash, `chat_template_kwargs.enable_thinking`
+      // (and `thinking`, zai-style `thinking: {type: "disabled"}`,
+      // `reasoning_effort: "none"`) are accepted but ignored. Oddly,
+      // `reasoning_effort: "low"` did suppress reasoning in 4/4 probes
+      // (2026-11-03), but that looks like a template quirk rather than a
+      // supported control, so no thinking parameters are sent.
+      {
+        id: "glm-5.3",
+        name: "GLM 5.3",
+        reasoning: true,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 1048576,
+        maxTokens: 8192,
+        compat: vllmCompat,
+      },
       {
         id: "mistral-large-4-1t-a52b",
         name: "Mistral Large 4 1T A52B (Vision)",

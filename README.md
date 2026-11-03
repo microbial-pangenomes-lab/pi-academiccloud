@@ -68,6 +68,7 @@ Gemma 4 and Qwen 3.5 397B get their own provider because their vLLM backend has 
 - EuroLLM 22B Instruct 2512 (no tool calls — use with `pi --no-tools`)
 - DeepSeek V4 Flash 0731 (Reasoning)
 - DeepSeek V4.1 Flash 1017 (Reasoning)
+- GLM 5.3 (Reasoning; always reasons, thinking level has no effect)
 - Mistral Large 4 1T A52B (Vision, Reasoning; always reasons, effort low/medium/high)
 - Qwen 3 Coder Next (Coding)
 - GLM 5.3 Flash (Multimodal, Reasoning)
